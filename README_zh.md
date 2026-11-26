@@ -51,6 +51,7 @@ Skill，欢迎分享给 SkillHub 社区，与大家一起丰富开放、实用�
 - 📖 **[用户指南](https://iflytek.github.io/skillhub/)** — 技能发布、搜索、CLI 使用等用户操作指南
 - 🛠️ **[开发者文档](https://zread.ai/iflytek/skillhub)** — 架构设计、API 参考、本地开发、部署运维等技术文档
 - 🐍 **[Python 示例](./examples/python)** — 使用 REST API 在 Python 中搜索、下载和发布技能
+- **[Skills over MCP 研究与整合方案](./docs/skills-over-mcp.md)** — 官方扩展、客户端使用与 SkillHub 接入建议（尚未实现）
 
 ## 核心特性
 
