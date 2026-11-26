@@ -233,6 +233,8 @@ skillhub/
 
 ## 部署
 
+本 Fork 的 minapp 生产实例维护见 [部署、备份与回退手册](deploy/minapp/README.md)，包含两个域名、当前运行版本和数据保留流程。
+
 ### 使用 Docker Compose
 
 ```bash

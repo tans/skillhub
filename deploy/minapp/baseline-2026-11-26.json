@@ -1,0 +1,97 @@
+{
+  "checked_at": "2026-11-26",
+  "compose_project": "skillhub",
+  "public_urls": [
+    "https://skillhub.minapp.xin",
+    "https://jie-skills.minapp.xin"
+  ],
+  "production_directory": "/data/skillhub",
+  "version": "v0.2.26",
+  "data_counts": {
+    "users": 8,
+    "skills": 89,
+    "skill_versions": 92,
+    "skill_files": 511,
+    "storage_files": 598
+  },
+  "containers": [
+    {
+      "service": "server",
+      "image": "crpi-ptu2rqimrigtq0qx.cn-hangzhou.personal.cr.aliyuncs.com/skill_hub/skillhub-server:v0.2.26",
+      "image_id": "sha256:27178137fbf34c86caecb2d5046ef290d5381729bc2677fcdc9403578951f0c6",
+      "repo_digests": [
+        "crpi-ptu2rqimrigtq0qx.cn-hangzhou.personal.cr.aliyuncs.com/skill_hub/skillhub-server@sha256:4eeadcfd95375648f23451a47f3351b40b047bd81fcaa3ed2e8e3b1b8e9e97cb"
+      ],
+      "source_revision": "929f3f1b34a2ddd1739b8ba36715ae34e34173b3",
+      "volumes": [
+        {
+          "name": "skillhub_skillhub_storage",
+          "destination": "/var/lib/skillhub/storage"
+        }
+      ]
+    },
+    {
+      "service": "web",
+      "image": "crpi-ptu2rqimrigtq0qx.cn-hangzhou.personal.cr.aliyuncs.com/skill_hub/skillhub-web:v0.2.26",
+      "image_id": "sha256:70648963f8d606e0a04f8090d4741169029eb3d132b1dd1dec66a6f31a5b4fa5",
+      "repo_digests": [
+        "crpi-ptu2rqimrigtq0qx.cn-hangzhou.personal.cr.aliyuncs.com/skill_hub/skillhub-web@sha256:3b66accd719c1cfc3f62b7e4ca62a903d6d1956bf3ba0bf92bd65f2970d6e8d7"
+      ],
+      "source_revision": "929f3f1b34a2ddd1739b8ba36715ae34e34173b3",
+      "volumes": []
+    },
+    {
+      "service": "skill-scanner",
+      "image": "crpi-ptu2rqimrigtq0qx.cn-hangzhou.personal.cr.aliyuncs.com/skill_hub/skillhub-scanner:v0.2.26",
+      "image_id": "sha256:32f5c310aecc1be898690a8fc52ab98c8fae7d6ab7c4ff58287438fea36427b2",
+      "repo_digests": [
+        "crpi-ptu2rqimrigtq0qx.cn-hangzhou.personal.cr.aliyuncs.com/skill_hub/skillhub-scanner@sha256:78f2701023e8edd264a559839e0d2ff91ae20d21dce034250c35cba5801235aa"
+      ],
+      "source_revision": "929f3f1b34a2ddd1739b8ba36715ae34e34173b3",
+      "volumes": []
+    },
+    {
+      "service": "postgres",
+      "image": "postgres:16-alpine",
+      "image_id": "sha256:4278d7b1e3deb3193ddc803158f6532963f059fc25a2eefaee4b5a9e71741873",
+      "repo_digests": [
+        "postgres@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139"
+      ],
+      "source_revision": null,
+      "volumes": [
+        {
+          "name": "skillhub_postgres_data",
+          "destination": "/var/lib/postgresql/data"
+        }
+      ]
+    },
+    {
+      "service": "redis",
+      "image": "redis:7-alpine",
+      "image_id": "sha256:bb8953020f6597e47d5d699a9910a25d77a69608dbd58e0f722940598ed85fc0",
+      "repo_digests": [
+        "redis@sha256:7b1753b4c5ad8458906c272a8132b8c15f5557b000379eb115fb239706a384b7"
+      ],
+      "source_revision": null,
+      "volumes": [
+        {
+          "name": "skillhub_redis_data",
+          "destination": "/data"
+        }
+      ]
+    }
+  ],
+  "fork_source_base": "629be65109cc634525243faa6399a9d279905b60",
+  "verification": {
+    "homepages": "Both HTTP 200",
+    "public_skill_list": "Both domains return identical JSON",
+    "backend_health": "Internal actuator returns UP",
+    "compose_config": "docker compose config --quiet passed",
+    "backup_integrity": "Five archive SHA256 sums passed; pg_restore --list readable",
+    "not_run": [
+      "login and publication flow",
+      "restore rehearsal",
+      "application upgrade"
+    ]
+  }
+}
