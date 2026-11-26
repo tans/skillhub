@@ -1,4 +1,15 @@
 {
+  "adminConsole": {
+    "title": "Administration",
+    "overview": "Overview",
+    "subtitle": "Manage platform users, namespaces and member permissions.",
+    "usersDescription": "Search and filter accounts, approve or disable users, change platform roles and request password resets.",
+    "namespacesDescription": "Create and search namespaces, manage members and roles, transfer ownership, freeze, archive or restore namespaces.",
+    "manageUsers": "Manage users",
+    "manageNamespaces": "Manage namespaces",
+    "loadError": "Unable to load data. Check your permissions or try again.",
+    "retry": "Reload"
+  },
   "dateTimePicker": {
     "placeholder": "Choose date and time",
     "title": "Choose expiration",

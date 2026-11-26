@@ -214,6 +214,11 @@ const NotificationSettingsPage = createLazyRouteComponent(
   'NotificationSettingsPage',
   dashboardRouteOptions,
 )
+const AdminConsolePage = createRoleProtectedRouteComponent(
+  () => import('@/pages/admin/index'),
+  'AdminConsolePage',
+  ['USER_ADMIN', 'SUPER_ADMIN'],
+)
 const AdminUsersPage = createRoleProtectedRouteComponent(
   () => import('@/pages/admin/users'),
   'AdminUsersPage',
@@ -750,6 +755,13 @@ const settingsAccountsRoute = createRoute({
   },
 })
 
+const adminConsoleRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'admin',
+  beforeLoad: requireAuth,
+  component: AdminConsolePage,
+})
+
 const adminUsersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'admin/users',
@@ -841,6 +853,7 @@ const routeTree = rootRoute.addChildren([
   settingsProfileRoute,
   settingsNotificationsRoute,
   settingsAccountsRoute,
+  adminConsoleRoute,
   adminUsersRoute,
   adminAuditLogRoute,
   adminLabelsRoute,

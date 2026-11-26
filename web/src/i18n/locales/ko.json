@@ -1,4 +1,15 @@
 {
+  "adminConsole": {
+    "title": "관리자 콘솔",
+    "overview": "개요",
+    "subtitle": "사용자, 네임스페이스 및 구성원 권한을 관리합니다.",
+    "usersDescription": "계정 검색 및 필터링, 사용자 승인 및 비활성화, 역할 변경, 비밀번호 재설정 요청을 관리합니다.",
+    "namespacesDescription": "네임스페이스 생성 및 검색, 구성원 및 역할 관리, 소유권 이전, 동결, 보관 및 복원을 관리합니다.",
+    "manageUsers": "사용자 관리",
+    "manageNamespaces": "네임스페이스 관리",
+    "loadError": "데이터를 불러올 수 없습니다. 권한을 확인하거나 다시 시도하세요.",
+    "retry": "다시 불러오기"
+  },
   "compliance": {
     "title": "규정 준수 선언",
     "mappingCount": "{{count}}개 항목",

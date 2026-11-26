@@ -1,0 +1,9 @@
+# Build static assets first with the lockfile-pinned pnpm version in web/.
+# Retain the production nginx configuration, runtime scripts and old hashed assets
+# so pages already open during a release can still load their lazy chunks.
+ARG BASE_IMAGE=crpi-ptu2rqimrigtq0qx.cn-hangzhou.personal.cr.aliyuncs.com/skill_hub/skillhub-web:v0.2.26
+FROM ${BASE_IMAGE}
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.source="https://github.com/tans/skillhub" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}"
+COPY web/dist/ /usr/share/nginx/html/

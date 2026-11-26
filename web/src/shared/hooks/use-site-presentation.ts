@@ -23,7 +23,13 @@ export function localizedPresentationText(values: Record<string, string>, langua
 
 export function useSitePresentation() {
   const preview = useContext(SitePresentationPreviewContext)
-  const query = useQuery({ enabled: preview === null, queryKey: SITE_PRESENTATION_QUERY_KEY, queryFn: sitePresentationApi.get, staleTime: 30_000, retry: false, refetchOnMount: false, meta: { skipGlobalErrorHandler: true } })
+  const query = useQuery({ enabled: preview === null, queryKey: SITE_PRESENTATION_QUERY_KEY,
+    // Explicit compatibility build for servers predating the public resource.
+    // Default builds keep the endpoint and its existing error reporting enabled.
+    queryFn: () => import.meta.env.VITE_SITE_PRESENTATION_ENABLED === 'false'
+      ? Promise.resolve({ settings: defaultSitePresentation(), version: 0 })
+      : sitePresentationApi.get(),
+    staleTime: 30_000, retry: false, refetchOnMount: false, meta: { skipGlobalErrorHandler: true } })
   return { ...query, settings: preview ?? query.data?.settings ?? defaultSitePresentation() }
 }
 

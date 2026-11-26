@@ -173,6 +173,11 @@ export function UserMenu({ user, triggerClassName }: UserMenuProps) {
             ) : null}
             {canReview || isUserAdmin || isAuditor || isSuperAdmin ? <div className="-mx-1 my-1 h-px bg-muted" /> : null}
             {isUserAdmin ? (
+              <Link data-analytics-id="admin.console.open" to="/admin" className={menuItemClassName} onClick={closeMenu}>
+                {t('adminConsole.title')}
+              </Link>
+            ) : null}
+            {isUserAdmin ? (
               <Link data-analytics-id="admin.users.open" to="/admin/users" className={menuItemClassName} onClick={closeMenu}>
                 {t('user.menu.users')}
               </Link>

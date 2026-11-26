@@ -39,6 +39,7 @@ import {
   useUpdateUserRole,
 } from '@/features/admin/use-admin-users'
 import type { AdminUser } from '@/features/admin/use-admin-users'
+import { AdminNavigation } from '@/features/admin/admin-navigation'
 
 /**
  * Admin user management page that combines search, status filtering, approval,
@@ -64,7 +65,7 @@ export function AdminUsersPage() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [actionType, setActionType] = useState<'ban' | 'unban' | 'reset'>('ban')
 
-  const { data, isLoading } = useAdminUsers({
+  const { data, isLoading, isError, refetch } = useAdminUsers({
     search,
     status: statusFilter || undefined,
     page,
@@ -150,6 +151,7 @@ export function AdminUsersPage() {
 
   return (
     <div className="space-y-8 animate-fade-up">
+      <AdminNavigation />
       <div>
         <h1 className="text-4xl font-bold font-heading mb-2">{t('adminUsers.title')}</h1>
         <p className="text-muted-foreground text-lg">{t('adminUsers.subtitle')}</p>
@@ -203,6 +205,11 @@ export function AdminUsersPage() {
             <div key={i} className="h-14 animate-shimmer rounded-lg" />
           ))}
         </div>
+      ) : isError ? (
+        <Card className="space-y-4 p-8 text-center" role="alert">
+          <p>{t('adminConsole.loadError')}</p>
+          <Button variant="outline" onClick={() => refetch()}>{t('adminConsole.retry')}</Button>
+        </Card>
       ) : !data || data.items.length === 0 ? (
         <Card className="p-12 text-center">
           <p className="text-muted-foreground">{t('adminUsers.empty')}</p>

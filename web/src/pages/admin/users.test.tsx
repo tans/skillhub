@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/features/admin/admin-navigation', () => ({ AdminNavigation: () => null }))
+
 vi.mock('react-i18next', async () => {
   const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next')
   return {
@@ -95,5 +97,13 @@ describe('AdminUsersPage', () => {
     const html = renderToStaticMarkup(<AdminUsersPage />)
     expect(html).toContain('adminUsers.title')
     expect(html).toContain('adminUsers.subtitle')
+  })
+
+  it('shows a retryable error instead of reporting an empty user list', () => {
+    useAdminUsersMock.mockReturnValue({ isLoading: false, isError: true, refetch: vi.fn() })
+    const html = renderToStaticMarkup(<AdminUsersPage />)
+    expect(html).toContain('adminConsole.loadError')
+    expect(html).toContain('adminConsole.retry')
+    expect(html).not.toContain('adminUsers.empty')
   })
 })

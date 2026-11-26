@@ -2,6 +2,8 @@
 
 维护任务：JAI-57。核对时间：2026-11-26。源码仓库为 `tans/skillhub`（SSH origin：`git@github.com:tans/skillhub.git`）；同步源码不等于升级生产。
 
+管理后台的前端发布覆盖、当前三文件 Compose 命令与回退方法见 [管理后台发布与使用](ADMIN.md)。以下 v0.2.26 清单是首次核对基线；启用 web 覆盖后以 `ADMIN.md` 和生产 `deployment.json` 为准。
+
 ## 已运行环境
 
 | 项目 | 当前值 |

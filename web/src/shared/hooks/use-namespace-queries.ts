@@ -108,6 +108,7 @@ export function useCreateNamespace() {
   return useMutation({
     mutationFn: createNamespace,
     onSuccess: (namespace) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'namespaces'] })
       queryClient.invalidateQueries({ queryKey: ['namespaces', 'my'] })
       queryClient.invalidateQueries({ queryKey: ['namespaces', namespace.slug] })
       queryClient.invalidateQueries({ queryKey: ['namespaces'] })

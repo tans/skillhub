@@ -22,4 +22,10 @@ describe('site document metadata', () => {
     expect(icon.getAttribute('href')).toBe('/skillhub/favicon.svg')
     expect(icon.type).toBe('image/svg+xml')
   })
+
+  it('retains the title provided by the deployment when no custom branding is configured', () => {
+    document.head.innerHTML = '<title>jie-skills</title><link rel="icon" href="/favicon.svg">'
+    render(<PresentationDocument />)
+    expect(document.title).toBe('jie-skills')
+  })
 })

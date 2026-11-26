@@ -2,6 +2,8 @@ import { KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AdminNamespace, NamespaceMember, NamespaceRole } from '@/api/types'
 import { formatLocalDateTime } from '@/shared/lib/date-time'
+import { AdminNavigation } from '@/features/admin/admin-navigation'
+import { CreateNamespaceDialog } from '@/features/namespace/create-namespace-dialog'
 import { toast } from '@/shared/lib/toast'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -317,9 +319,15 @@ export function AdminNamespacesPage() {
 
   return (
     <div className="space-y-8 animate-fade-up">
-      <div>
-        <h1 className="text-4xl font-bold font-heading mb-2">{t('adminNamespaces.title')}</h1>
-        <p className="text-muted-foreground text-lg">{t('adminNamespaces.subtitle')}</p>
+      <AdminNavigation />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-bold font-heading mb-2">{t('adminNamespaces.title')}</h1>
+          <p className="text-muted-foreground text-lg">{t('adminNamespaces.subtitle')}</p>
+        </div>
+        <CreateNamespaceDialog>
+          <Button>{t('myNamespaces.create')}</Button>
+        </CreateNamespaceDialog>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -387,6 +395,11 @@ export function AdminNamespacesPage() {
                 <div key={index} className="h-14 animate-shimmer rounded-lg" />
               ))}
             </div>
+          ) : namespacesQuery.isError ? (
+            <div role="alert" className="space-y-4 p-8 text-center">
+              <p>{t('adminConsole.loadError')}</p>
+              <Button variant="outline" onClick={() => namespacesQuery.refetch()}>{t('adminConsole.retry')}</Button>
+            </div>
           ) : namespaces.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">{t('adminNamespaces.empty')}</div>
           ) : (
@@ -410,7 +423,7 @@ export function AdminNamespacesPage() {
                       onClick={() => setSelectedSlug(namespace.slug)}
                     >
                       <TableCell>
-                        <div className="font-medium">{namespace.displayName}</div>
+                        <button type="button" className="rounded font-medium text-left hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring" onClick={() => setSelectedSlug(namespace.slug)} aria-pressed={selectedSlug === namespace.slug}>{namespace.displayName}</button>
                         <div className="font-mono text-xs text-muted-foreground">@{namespace.slug}</div>
                       </TableCell>
                       <TableCell>{namespaceTypeLabel(t, namespace.type)}</TableCell>

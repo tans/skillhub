@@ -1,0 +1,4 @@
+# Add after compose.release.yml and compose.host.yml; only replace the web image.
+services:
+  web:
+    image: ${SKILLHUB_MINAPP_WEB_IMAGE:?Set the immutable minapp web image tag}

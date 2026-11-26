@@ -1,4 +1,15 @@
 {
+  "adminConsole": {
+    "title": "管理后台",
+    "overview": "管理概览",
+    "subtitle": "集中管理平台用户、空间及成员权限。",
+    "usersDescription": "搜索和筛选用户，审批账号、启用或停用用户，调整平台角色及发起密码重置。",
+    "namespacesDescription": "创建与查找空间，管理空间成员和角色，转移所有权，以及冻结、归档或恢复空间。",
+    "manageUsers": "进入用户管理",
+    "manageNamespaces": "进入空间管理",
+    "loadError": "加载失败，请检查权限或稍后重试。",
+    "retry": "重新加载"
+  },
   "dateTimePicker": {
     "placeholder": "选择日期与时间",
     "title": "选择过期时间",
