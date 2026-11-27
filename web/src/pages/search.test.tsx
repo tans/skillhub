@@ -40,12 +40,16 @@ vi.mock('@/features/search/market-search-controls', () => ({
   MarketSearchControls: (props: {
     query: string; onSearch: (value: string) => void; source: string; onSourceChange: (value: string) => void;
     labels: Array<{ slug: string; displayName: string }>; selectedLabel: string; onLabelChange: (value: string) => void;
+    namespaces?: Array<{ slug: string; displayName: string }>; onNamespaceChange: (value: string) => void;
     onSortChange: (value: string) => void; onStarredToggle: () => void; starredOnly: boolean;
   }) => {
     searchBarProps.push({ value: props.query, onSearch: props.onSearch })
     if (!props.starredOnly) {
       for (const source of ['platform', 'github', 'all']) buttonRecords.push({ label: `search.source.${source}`, variant: props.source === source ? 'default' : 'outline', onClick: () => props.onSourceChange(source) })
       for (const label of props.labels) buttonRecords.push({ label: label.displayName, variant: props.selectedLabel === label.slug ? 'default' : 'outline', onClick: () => props.onLabelChange(label.slug) })
+    }
+    for (const namespace of props.namespaces ?? []) {
+      buttonRecords.push({ label: namespace.displayName, onClick: () => props.onNamespaceChange(namespace.slug) })
     }
     for (const sort of ['relevance', 'downloads', 'newest']) buttonRecords.push({ label: `search.sort.${sort}`, onClick: () => props.onSortChange(sort) })
     buttonRecords.push({ label: 'search.filterStarred', onClick: props.onStarredToggle })
@@ -129,6 +133,10 @@ vi.mock('@/shared/hooks/use-user-queries', () => ({
   }),
 }))
 
+vi.mock('@/shared/hooks/use-namespace-queries', () => ({
+  useMyNamespaces: () => ({ data: [{ slug: 'team-docs', displayName: 'Team Docs' }] }),
+}))
+
 import { SearchPage } from './search'
 
 function findButton(label: string) {
@@ -176,6 +184,14 @@ describe('SearchPage', () => {
   it('keeps an explicit namespace link across all sources', () => {
     renderToStaticMarkup(<SearchPage />)
     expect(searchSkillParams[0]).toMatchObject({ namespace: 'team-ai', source: 'all' })
+  })
+
+  it('selects a joined namespace and resets paging without dropping the other filters', () => {
+    renderToStaticMarkup(<SearchPage />)
+    findButton('Team Docs').onClick?.()
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/search', search: {
+      q: 'agent', namespace: 'team-docs', label: 'code-generation', source: 'all', sort: 'downloads', page: 0, starredOnly: false,
+    } })
   })
 
   it('restores explicit source and resets paging on source changes', () => {

@@ -17,7 +17,7 @@ function setup(labelCount = 8) {
     query: '', onQueryChange: vi.fn(), onSearch: vi.fn(), source: 'platform' as const, onSourceChange: vi.fn(),
     labels: ['Office', 'Development', 'Learning', 'Writing', 'Research', 'Security', 'Design', 'Archive'].slice(0, labelCount).map(displayName => ({ slug: displayName.toLowerCase(), displayName, type: 'RECOMMENDED' })),
     selectedLabel: 'office', onLabelChange: vi.fn(), starredOnly: false, onStarredToggle: vi.fn(),
-    sort: 'newest', onSortChange: vi.fn(), namespace: '', onNamespaceClear: vi.fn(), resultCount: 26, isUpdating: false,
+    sort: 'newest', onSortChange: vi.fn(), namespace: '', onNamespaceChange: vi.fn(), onNamespaceClear: vi.fn(), resultCount: 26, isUpdating: false,
   }
   const view = render(<MarketSearchControls {...props} />)
   return { ...props, updateFavorites: (starredOnly: boolean) => view.rerender(<MarketSearchControls {...props} starredOnly={starredOnly} />), updateQuery: (query: string) => view.rerender(<MarketSearchControls {...props} query={query} />) }

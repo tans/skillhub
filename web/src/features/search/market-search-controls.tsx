@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { Bookmark, Check, ChevronDown, GitBranch, Layers, LayoutGrid, SlidersHorizontal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { LabelItem, SkillSource } from '@/api/types'
+import type { LabelItem, ManagedNamespace, SkillSource } from '@/api/types'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
@@ -25,6 +25,8 @@ interface MarketSearchControlsProps {
   sort: string
   onSortChange: (value: string) => void
   namespace: string
+  namespaces?: ManagedNamespace[]
+  onNamespaceChange: (value: string) => void
   onNamespaceClear: () => void
   resultCount: number
   isUpdating: boolean
@@ -40,6 +42,8 @@ export function MarketSearchControls(props: MarketSearchControlsProps) {
   const searchTerm = labelSearch.trim().toLocaleLowerCase()
   const matchingLabels = props.labels.filter(label => `${label.displayName} ${label.slug}`.toLocaleLowerCase().includes(searchTerm))
   const desktopLabels = searchTerm ? matchingLabels : props.labels.slice(6)
+  const selectedNamespace = props.namespaces?.find(namespace => namespace.slug === props.namespace)
+  const allNamespaces = '__all__'
 
   useEffect(() => {
     if ((!desktopOpen && !mobileOpen) || typeof window.matchMedia !== 'function') return
@@ -165,7 +169,28 @@ export function MarketSearchControls(props: MarketSearchControlsProps) {
             </>}
           </div>
         </div>
-        {props.namespace && <Button size="sm" variant="soft" className="mt-3 max-w-full" data-analytics-id="search.namespace.clear" onClick={props.onNamespaceClear}><span className="truncate">{t('search.namespaceFilter', { namespace: props.namespace })}</span></Button>}
+        {props.namespaces && (
+          <div className="mt-3.5 flex flex-wrap items-center gap-3 border-t border-border pt-2.5 sm:gap-5">
+            <label htmlFor="market-namespace" className="text-xs text-muted-foreground">{t('search.market.namespace')}</label>
+            <Select
+              value={selectedNamespace?.slug ?? (props.namespace ? '' : allNamespaces)}
+              onValueChange={value => props.onNamespaceChange(value === allNamespaces ? '' : value)}
+            >
+              <SelectTrigger id="market-namespace" className="h-8 w-60 max-w-full text-sm">
+                <SelectValue placeholder={t('search.market.chooseNamespace')} />
+              </SelectTrigger>
+              <SelectContent density="compact">
+                <SelectItem value={allNamespaces}>{t('search.market.allNamespaces')}</SelectItem>
+                {props.namespaces.map(namespace => (
+                  <SelectItem key={namespace.slug} value={namespace.slug}>
+                    {namespace.displayName} (@{namespace.slug})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {props.namespace && !selectedNamespace && <Button size="sm" variant="soft" className="mt-3 max-w-full" data-analytics-id="search.namespace.clear" onClick={props.onNamespaceClear}><span className="truncate">{t('search.namespaceFilter', { namespace: props.namespace })}</span></Button>}
       </section>
 
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">

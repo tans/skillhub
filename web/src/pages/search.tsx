@@ -12,6 +12,7 @@ import { SkillCard } from '@/features/skill/skill-card'
 import { SkeletonList } from '@/shared/components/skeleton-loader'
 import { EmptyState } from '@/shared/components/empty-state'
 import { useVisibleLabels } from '@/shared/hooks/use-label-queries'
+import { useMyNamespaces } from '@/shared/hooks/use-namespace-queries'
 import { useMyStars } from '@/shared/hooks/use-user-queries'
 import { toRouterPath } from '@/shared/lib/base-path'
 import { formatNamespaceSearchInput, normalizeSearchQuery, parseNamespaceSearchInput } from '@/shared/lib/search-query'
@@ -73,6 +74,7 @@ export function SearchPage() {
 
   const query = useMarketSkills(params, viewer, language, !starredOnly && !isAuthLoading)
   const { data: labels } = useVisibleLabels()
+  const { data: myNamespaces } = useMyNamespaces(isAuthenticated)
   const favorites = useMyStars(starredOnly && isAuthenticated)
   const filteredFavorites = starredOnly ? sortStarredSkills(filterStarredSkills(favorites.data ?? [], q, namespace), sort) : []
   const favoritesVisible = favoriteWindow.key === scrollKey ? favoriteWindow.count : PAGE_SIZE
@@ -135,7 +137,10 @@ export function SearchPage() {
         source={source} onSourceChange={handleSourceChange} labels={labels ?? []} selectedLabel={selectedLabel}
         onLabelChange={label => applyFilters({ ...current, label: label === selectedLabel ? '' : label })}
         starredOnly={starredOnly} onStarredToggle={handleStarredToggle} sort={sort} onSortChange={value => applyFilters({ ...current, sort: value })}
-        namespace={namespace} onNamespaceClear={() => applyFilters({ ...current, namespace: '', source: searchParams.source ?? 'platform' })}
+        namespace={namespace}
+        namespaces={isAuthenticated ? myNamespaces : undefined}
+        onNamespaceChange={value => applyFilters({ ...current, namespace: value })}
+        onNamespaceClear={() => applyFilters({ ...current, namespace: '', source: searchParams.source ?? 'platform' })}
         resultCount={resultCount} isUpdating={isUpdatingResults} />
       {isPageLoading ? <div role="status" aria-label={t('common.loading')}><SkeletonList count={PAGE_SIZE} /></div> : loadFailed && displayItems.length === 0 ? (
         <div className="text-center" role="alert"><EmptyState title={t('search.source.loadFailed')} /><Button data-analytics-id="search.source.retry" variant="outline" onClick={retry}>{t('search.source.retry')}</Button></div>

@@ -98,7 +98,6 @@ export function Layout() {
     { label: t('nav.landing'), to: '/', analyticsId: 'navigation.home.open', exact: true },
     { label: t('nav.publish'), to: '/dashboard/publish', analyticsId: 'skill.publish.open', auth: true },
     { label: t('nav.marketplace'), to: '/search', analyticsId: 'navigation.skills.open' },
-    { label: t('nav.githubSkills'), to: '/github', analyticsId: 'navigation.github.open' },
     { label: t('nav.suites'), to: '/suites', analyticsId: 'navigation.suites.open' },
     { label: t('nav.dashboard'), to: '/dashboard', analyticsId: 'navigation.dashboard.open', auth: true },
   ]

@@ -13,6 +13,7 @@ vi.mock('@tanstack/react-query', async original => ({ ...await original<typeof i
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'zh' } }) }))
 vi.mock('@/features/auth/use-auth', () => ({ useAuth: () => ({ isAuthenticated: true, user: { userId: 'viewer' }, isLoading: false }) }))
 vi.mock('@/shared/hooks/use-label-queries', () => ({ useVisibleLabels: () => ({ data: [] }) }))
+vi.mock('@/shared/hooks/use-namespace-queries', () => ({ useMyNamespaces: () => ({ data: [] }) }))
 vi.mock('@/shared/hooks/use-user-queries', () => ({ useMyStars: () => ({ data: state.favorites, isLoading: false, isFetching: false }) }))
 vi.mock('@/features/search/use-market-skills', async original => ({ ...await original<typeof import('@/features/search/use-market-skills')>(), useMarketSkills: () => state.query }))
 vi.mock('@/features/search/market-search-controls', () => ({ MarketSearchControls: ({ onSourceChange }: { onSourceChange: (source: string) => void }) => <button onClick={() => onSourceChange('github')}>change source</button> }))
