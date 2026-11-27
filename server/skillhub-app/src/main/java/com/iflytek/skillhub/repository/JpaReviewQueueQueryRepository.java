@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -19,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
  * batch fetch then restores the domain tasks for the existing response projection.
  */
 @Repository
-@Transactional(readOnly = true)
+// Count, page rows and their verdicts must observe the same scan/review snapshot.
+@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 public class JpaReviewQueueQueryRepository implements ReviewQueueQueryRepository {
     // Match SkillMetadata's String.strip, string-only package metadata and UTF-16 length limit.
     private static final String STRIP_CHARACTERS = "\t\n\u000b\f\r\u001c\u001d\u001e\u001f \u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2008\u2009\u200a\u2028\u2029\u205f\u3000";
@@ -37,16 +39,16 @@ public class JpaReviewQueueQueryRepository implements ReviewQueueQueryRepository
         String javaLength = "length(" + value + ") + length(regexp_replace(" + value + ", '[^𐀀-􏿿]', '', 'g'))";
         return "CASE WHEN " + javaLength + " <= 200 THEN NULLIF(" + value + ", '') END";
     }
-    private static final String NAME = "CASE WHEN task.subject_type = 'SUITE_VERSION' "
+    static final String NAME = "CASE WHEN task.subject_type = 'SUITE_VERSION' "
             + "THEN COALESCE(suite_version.display_name, suite.display_name, suite.slug) ELSE COALESCE("
             + displayName("version.parsed_metadata_json ->> 'displayNameOverride'") + ", "
             + displayName(packageText("display-name")) + ", version.parsed_metadata_json ->> 'name', "
             + "skill.display_name, skill.slug) END ";
-    private static final String SUMMARY = "CASE WHEN task.subject_type = 'SUITE_VERSION' "
+    static final String SUMMARY = "CASE WHEN task.subject_type = 'SUITE_VERSION' "
             + "THEN CASE WHEN suite_version.id IS NOT NULL THEN suite_version.summary ELSE suite.summary END "
             + "ELSE COALESCE(version.parsed_metadata_json ->> 'shortDescriptionOverride', "
             + packageText("short-description") + ", version.parsed_metadata_json ->> 'description', skill.summary) END ";
-    private static final String KIND = """
+    static final String KIND = """
             CASE WHEN task.subject_type = 'SUITE_VERSION' THEN 'SUITE_PUBLISH'
               WHEN task.requested_visibility IS NOT NULL THEN 'VISIBILITY_CHANGE'
               WHEN task.subject_type = 'SKILL_METADATA' THEN 'AVATAR_CHANGE'
@@ -56,7 +58,16 @@ public class JpaReviewQueueQueryRepository implements ReviewQueueQueryRepository
                   AND previous.published_at <= task.submitted_at) THEN 'VERSION_UPDATE'
               ELSE 'FIRST_PUBLISH' END
             """;
-    private static final String FROM = """
+    static final String CURRENT_SCAN = """
+            LEFT JOIN LATERAL (
+                SELECT audit.verdict, audit.is_safe, audit.scanned_at, audit.failure_reason
+                FROM security_audit audit WHERE audit.skill_version_id = version.id
+                  AND audit.scanner_type = 'SKILL_SCANNER' AND audit.deleted_at IS NULL
+                ORDER BY audit.created_at DESC, audit.id DESC LIMIT 1
+            ) scan ON TRUE
+            """;
+    private static final String VERDICT = "CASE WHEN scan.scanned_at IS NOT NULL AND scan.failure_reason IS NULL THEN scan.verdict END";
+    static final String FROM = """
             FROM review_task task
             JOIN namespace ns ON ns.id = task.namespace_id
             LEFT JOIN skill ON task.subject_type IN ('SKILL_VERSION', 'SKILL_METADATA')
@@ -77,12 +88,39 @@ public class JpaReviewQueueQueryRepository implements ReviewQueueQueryRepository
     @Override
     public Page<Entry> list(Filter filter, boolean platformReviewer, Set<Long> managedNamespaceIds,
                             Pageable pageable) {
+        Condition condition = condition(filter, platformReviewer, managedNamespaceIds);
+        Map<String, Object> parameters = condition.parameters();
+        String where = condition.sql();
+        long total = ((Number) bind(entityManager.createNativeQuery("SELECT COUNT(*) " + FROM
+                        + (filter.scanVerdict() == null ? "" : CURRENT_SCAN) + where),
+                parameters).getSingleResult()).longValue();
+        String direction = pageable.getSort().getOrderFor("submittedAt") != null
+                && pageable.getSort().getOrderFor("submittedAt").isAscending() ? "ASC" : "DESC";
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = bind(entityManager.createNativeQuery("SELECT task.id, " + NAME + ", "
+                        + SUMMARY + ", " + KIND + ", " + VERDICT + " " + FROM + CURRENT_SCAN + where
+                        + " ORDER BY task.submitted_at " + direction + ", task.id " + direction), parameters)
+                .setFirstResult(Math.toIntExact(pageable.getOffset())).setMaxResults(pageable.getPageSize())
+                .getResultList();
+        if (rows.isEmpty()) return new PageImpl<>(List.of(), pageable, total);
+        List<Long> ids = rows.stream().map(row -> ((Number) row[0]).longValue()).toList();
+        Map<Long, ReviewTask> tasks = new HashMap<>();
+        entityManager.createQuery("SELECT task FROM ReviewTask task WHERE task.id IN :ids", ReviewTask.class)
+                .setParameter("ids", ids).getResultList().forEach(task -> tasks.put(task.getId(), task));
+        List<Entry> entries = rows.stream().map(row -> new Entry(tasks.get(((Number) row[0]).longValue()),
+                (String) row[1], (String) row[2], (String) row[3], (String) row[4])).toList();
+        return new PageImpl<>(entries, pageable, total);
+    }
+
+    record Condition(String sql, Map<String, Object> parameters) {}
+
+    static Condition condition(Filter filter, boolean platformReviewer, Set<Long> managedNamespaceIds) {
         Map<String, Object> parameters = new HashMap<>();
         StringBuilder where = new StringBuilder(" WHERE ");
         if (platformReviewer) {
             where.append("TRUE");
         } else if (managedNamespaceIds.isEmpty()) {
-            return Page.empty(pageable);
+            where.append("FALSE");
         } else {
             where.append("ns.type = 'TEAM' AND ns.id IN (:managedNamespaceIds)");
             parameters.put("managedNamespaceIds", managedNamespaceIds);
@@ -94,6 +132,10 @@ public class JpaReviewQueueQueryRepository implements ReviewQueueQueryRepository
         if (filter.status() != null) {
             where.append(" AND task.status = :status");
             parameters.put("status", filter.status());
+        }
+        if (filter.scanVerdict() != null) {
+            where.append(" AND (").append(VERDICT).append(") = :scanVerdict");
+            parameters.put("scanVerdict", filter.scanVerdict());
         }
         if (filter.originType() != null) {
             where.append(" AND task.origin_type = :originType");
@@ -107,30 +149,17 @@ public class JpaReviewQueueQueryRepository implements ReviewQueueQueryRepository
             where.append(" AND (LOWER(").append(NAME).append(") LIKE :query ESCAPE '!' ")
                     .append(" OR LOWER(CONCAT(ns.slug, '/', COALESCE(skill.slug, suite.slug))) LIKE :query ESCAPE '!' ")
                     .append(" OR LOWER(author.display_name) LIKE :query ESCAPE '!' ")
-                    .append(" OR LOWER(task.submitted_by) LIKE :query ESCAPE '!')");
+                    .append(" OR LOWER(task.submitted_by) LIKE :query ESCAPE '!' ")
+                    .append(" OR (task.origin_type = 'GITHUB_SYNC' AND EXISTS (SELECT 1 FROM github_sync_package_ingestion provenance ")
+                    .append(" JOIN github_source_binding repository_source ON repository_source.repository_id = provenance.repository_id ")
+                    .append(" AND repository_source.namespace_id = task.namespace_id WHERE provenance.id = task.github_sync_ingestion_id ")
+                    .append(" AND LOWER(CONCAT(repository_source.owner_login, '/', repository_source.repository_name)) LIKE :query ESCAPE '!')))");
             String value = filter.query().strip().toLowerCase(java.util.Locale.ROOT);
             if (value.startsWith("@")) value = value.substring(1);
             parameters.put("query", "%" + value.replace("!", "!!").replace("%", "!%")
                     .replace("_", "!_") + "%");
         }
-        long total = ((Number) bind(entityManager.createNativeQuery("SELECT COUNT(*) " + FROM + where),
-                parameters).getSingleResult()).longValue();
-        String direction = pageable.getSort().getOrderFor("submittedAt") != null
-                && pageable.getSort().getOrderFor("submittedAt").isAscending() ? "ASC" : "DESC";
-        @SuppressWarnings("unchecked")
-        List<Object[]> rows = bind(entityManager.createNativeQuery("SELECT task.id, " + NAME + ", "
-                        + SUMMARY + ", " + KIND + FROM + where
-                        + " ORDER BY task.submitted_at " + direction + ", task.id " + direction), parameters)
-                .setFirstResult(Math.toIntExact(pageable.getOffset())).setMaxResults(pageable.getPageSize())
-                .getResultList();
-        if (rows.isEmpty()) return new PageImpl<>(List.of(), pageable, total);
-        List<Long> ids = rows.stream().map(row -> ((Number) row[0]).longValue()).toList();
-        Map<Long, ReviewTask> tasks = new HashMap<>();
-        entityManager.createQuery("SELECT task FROM ReviewTask task WHERE task.id IN :ids", ReviewTask.class)
-                .setParameter("ids", ids).getResultList().forEach(task -> tasks.put(task.getId(), task));
-        List<Entry> entries = rows.stream().map(row -> new Entry(tasks.get(((Number) row[0]).longValue()),
-                (String) row[1], (String) row[2], (String) row[3])).toList();
-        return new PageImpl<>(entries, pageable, total);
+        return new Condition(where.toString(), parameters);
     }
 
     private Query bind(Query query, Map<String, Object> parameters) {

@@ -153,6 +153,12 @@ const MyNamespacesPage = createLazyRouteComponent(
 const NamespaceManagementPage = createLazyRouteComponent(() => import('@/pages/dashboard/namespace-management'), 'NamespaceManagementPage')
 const NamespaceSettingsPage = createLazyRouteComponent(() => import('@/pages/dashboard/namespace-settings'), 'NamespaceSettingsPage')
 
+const OrganizationsPage = createLazyRouteComponent(
+  () => import('@/pages/dashboard/organizations'), 'OrganizationsPage', dashboardRouteOptions,
+)
+const OrganizationMembersPage = createLazyRouteComponent(
+  () => import('@/pages/dashboard/organizations'), 'OrganizationMembersPage', dashboardRouteOptions,
+)
 const NamespaceMembersPage = createLazyRouteComponent(
   () => import('@/pages/dashboard/namespace-members'),
   'NamespaceMembersPage',
@@ -176,6 +182,7 @@ const GithubSyncPage = createRoleProtectedRouteComponent(
   () => import('@/pages/dashboard/github-sync'), 'GithubSyncPage', ['SUPER_ADMIN'], dashboardRouteOptions,
 )
 const ReviewsPage = createLazyRouteComponent(() => import('@/pages/dashboard/reviews'), 'ReviewsPage', dashboardRouteOptions)
+const RepositoryReviewPage = createLazyRouteComponent(() => import('@/pages/dashboard/repository-review'), 'RepositoryReviewPage', dashboardRouteOptions)
 const ReviewProgressPage = createLazyRouteComponent(
   () => import('@/pages/dashboard/review-progress'),
   'ReviewProgressPage',
@@ -328,11 +335,26 @@ const githubSkillsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'github',
   component: GithubSkillsPage,
-  validateSearch: (search: Record<string, unknown>): { q: string; sort: string; page: number } => ({
-    q: normalizeSearchQuery(typeof search.q === 'string' ? search.q : ''),
-    sort: search.sort === 'downloads' ? 'downloads' : 'newest',
-    page: Math.max(0, Number(search.page) || 0),
-  }),
+  validateSearch: (search: Record<string, unknown>): {
+    q: string; sort: string; page: number; view?: 'repositories'; repositoryId?: string; repositoryPage?: number; memberQuery?: string; snapshotId?: string; repositoryTab?: 'history'
+  } => {
+    const page = Number(search.page)
+    const repositoryPage = Number(search.repositoryPage)
+    const repositoryId = String(search.repositoryId ?? '')
+    const snapshotId = String(search.snapshotId ?? '')
+    const repositories = search.view === 'repositories'
+    return {
+      q: normalizeSearchQuery(typeof search.q === 'string' ? search.q : ''),
+      sort: search.sort === 'downloads' ? 'downloads' : 'newest',
+      page: Number.isInteger(page) && page >= 0 && page <= 2147483647 ? page : 0,
+      view: repositories ? 'repositories' : undefined,
+      repositoryId: repositories && /^[1-9][0-9]{0,18}$/.test(repositoryId) ? repositoryId : undefined,
+      repositoryPage: repositories && Number.isInteger(repositoryPage) && repositoryPage > 0 && repositoryPage <= 2147483647 ? repositoryPage : undefined,
+      snapshotId: repositories && /^[1-9][0-9]{0,18}$/.test(snapshotId) ? snapshotId : undefined,
+      repositoryTab: repositories && search.repositoryTab === 'history' ? 'history' : undefined,
+      memberQuery: repositories && typeof search.memberQuery === 'string' ? normalizeSearchQuery(search.memberQuery) || undefined : undefined,
+    }
+  },
 })
 
 const suitesRoute = createRoute({
@@ -530,6 +552,20 @@ const dashboardNamespaceSettingsRoute = createRoute({
   component: NamespaceSettingsPage,
 })
 
+const dashboardOrganizationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'dashboard/organizations',
+  beforeLoad: requireAuth,
+  component: OrganizationsPage,
+})
+
+const dashboardOrganizationMembersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'dashboard/organizations/$organizationId',
+  beforeLoad: requireAuth,
+  component: OrganizationMembersPage,
+})
+
 const dashboardNamespaceMembersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'dashboard/namespaces/$slug/members',
@@ -609,6 +645,14 @@ const dashboardReviewsRoute = createRoute({
   beforeLoad: requireAuth,
   validateSearch: validateReviewSearch,
   component: ReviewsPage,
+})
+
+const dashboardRepositoryReviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'dashboard/reviews/repositories/$snapshotId',
+  beforeLoad: requireAuth,
+  validateSearch: validateReviewSearch,
+  component: RepositoryReviewPage,
 })
 
 const dashboardReviewProgressRoute = createRoute({
@@ -830,6 +874,8 @@ const routeTree = rootRoute.addChildren([
   dashboardNamespacesRoute,
   dashboardNamespaceManagementRoute,
   dashboardNamespaceSettingsRoute,
+  dashboardOrganizationsRoute,
+  dashboardOrganizationMembersRoute,
   dashboardNamespaceMembersRoute,
   dashboardNamespaceReviewsRoute,
   dashboardNamespaceGithubSourcesRoute,
@@ -838,6 +884,7 @@ const routeTree = rootRoute.addChildren([
   dashboardGithubSyncRoute,
   dashboardGithubDeepDiscoveryRoute,
   dashboardReviewsRoute,
+  dashboardRepositoryReviewRoute,
   dashboardReviewProgressRoute,
   dashboardReportsRoute,
   dashboardReviewDetailRoute,
